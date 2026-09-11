@@ -17,9 +17,8 @@ def circle_area(radius: float) -> float:
 
 
 def main() -> None:
-    print(greet("Git"))
-    for radius in (1, 3, 5):
-        print(f"Радиус {radius} -> площадь {circle_area(radius):.2f}")
+    print(greet("студент"))
+    print(f"Площадь круга радиуса 10: {circle_area(10):.2f}")
 
 
 if __name__ == "__main__":
