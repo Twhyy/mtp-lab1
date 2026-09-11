@@ -1,0 +1,3 @@
+[submodule "libs/python-dotenv"]
+	path = libs/python-dotenv
+	url = https://github.com/theskumar/python-dotenv.git
