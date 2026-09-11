@@ -1,11 +1,13 @@
 """Простые статистические функции для учебного проекта."""
 
+import math
+
 
 def mean(values: list[float]) -> float:
-    """Среднее арифметическое последовательности чисел."""
+    """Среднее арифметическое с точным суммированием math.fsum."""
     if not values:
         raise ValueError("Последовательность не должна быть пустой")
-    return sum(values) / len(values)
+    return math.fsum(values) / len(values)
 
 
 def median(values: list[float]) -> float:
