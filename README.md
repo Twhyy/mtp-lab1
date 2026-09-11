@@ -70,23 +70,29 @@ origin	https://github.com/Twhyy/mtp-lab1.git (push)
 ```
 
 Все ветки и теги отправлены на GitHub — вывод `git ls-remote origin`
-на момент подготовки релиза 1.1.0:
+на момент подготовки релиза 1.1.1:
 
 ```
-a4ae34fbcf23dfdb787fa4c3c26ef9ff78dda441	HEAD
-99ea0cd9f1cb0b27b7596233b8202598813e498b	refs/heads/develop
+bf9858b10f39b0c54ae8712626a44002b2388697	HEAD
+a3f57d79ce84ea057bbd8df4dbc394e84502984a	refs/heads/develop
 9c48ece34ed44776ef8a93ce0c28eb11245a8086	refs/heads/feature/cli
 bf61bfc907568061c591d660879176667ad2b74c	refs/heads/feature/geometry
+c73d814ddfe79fea4ea9df4c3a5957c2a7bd3702	refs/heads/feature/report-short
+be8e4f058807090b27f8d2d2cbea8bfaa693ea95	refs/heads/feature/report-table
 6a2cf237643975784e7d9af455a6c30e5fdf51f4	refs/heads/feature/statistics
-a4ae34fbcf23dfdb787fa4c3c26ef9ff78dda441	refs/heads/main
+7b09dc7bf013ce5865bd83607889b44ede85d60e	refs/heads/feature/vendor
+bf9858b10f39b0c54ae8712626a44002b2388697	refs/heads/main
 a03fb4ae5020d1425fdbef9b99363b1d66ae8caf	refs/heads/release/1.0.0
 0e8976033f8160b840c136ee5bf62e860544fece	refs/heads/release/1.0.1
+5564c1307945334b99d2248fef6638b186b95455	refs/heads/release/1.1.0
 9c48ece34ed44776ef8a93ce0c28eb11245a8086	refs/pull/1/head
 8117f42391cbb36b5cb97970823d7d164efacf79	refs/pull/1/merge
 4df8f1b7e5e1d18e6070b72e2f674477e8c76c1e	refs/tags/v1.0.0
 53a4d33191639f51d5f3c971da581e3946aee26b	refs/tags/v1.0.0^{}
 422d7a9453f802ca1d8bdc07dbb2963cf138c7b3	refs/tags/v1.0.1
 a4ae34fbcf23dfdb787fa4c3c26ef9ff78dda441	refs/tags/v1.0.1^{}
+880841172104d84d14475359b1d64aee67273ce8	refs/tags/v1.1.0
+bf9858b10f39b0c54ae8712626a44002b2388697	refs/tags/v1.1.0^{}
 ```
 
 ---
@@ -308,21 +314,70 @@ git commit -m "merge: разрешить конфликт в main.py при сл
 Merge-коммит конфликта и его родители:
 
 ```
-commit 2ef3e94
-родители: 9571c2f be8e4f0
-сообщение: merge: разрешить конфликт в main.py при слиянии feature/report-table
+commit 8aaa836
+родители: 6a3bdb3 17662f7
+сообщение: merge: разрешить конфликт в stats.py при слиянии feature/stats-fsum
 ```
 
-Оба родителя меняли один и тот же файл `main.py`:
+### Конфликт №2 — файл `stats.py`
+
+Тот же приём повторён на другом файле, но в максимально явной форме: **обе
+сливаемые стороны — обычные коммиты**, и обе меняют `stats.py`.
+
+| Ветка | Коммит | Что сделала с `mean()` |
+|-------|--------|------------------------|
+| `feature/stats-precision` | `6a3bdb3` | округление результата до четырёх знаков |
+| `feature/stats-fsum` | `17662f7` | точное суммирование через `math.fsum` |
+
+```bash
+git checkout feature/stats-precision
+git merge --no-ff feature/stats-fsum -m "merge: влить feature/stats-fsum в feature/stats-precision"
+```
 
 ```
-9571c2f merge: влить feature/report-short в develop
-
-be8e4f0 feat: выводить таблицу площадей для радиусов 1-5
-main.py
+Auto-merging stats.py
+CONFLICT (content): Merge conflict in stats.py
+Automatic merge failed; fix conflicts and then commit the result.
 ```
 
-Подробный разбор — в файле [`docs/conflict-log.md`](docs/conflict-log.md).
+Конфликтующий фрагмент `stats.py`:
+
+```python
+def mean(values: list[float]) -> float:
+    """Среднее арифметическое, округлённое до четырёх знаков."""
+    if not values:
+        raise ValueError("Последовательность не должна быть пустой")
+    return round(sum(values) / len(values), 4)
+=======
+def mean(values: list[float]) -> float:
+    """Среднее арифметическое с точным суммированием math.fsum."""
+    if not values:
+        raise ValueError("Последовательность не должна быть пустой")
+    return math.fsum(values) / len(values)
+```
+
+Разрешено объединением: взято и точное суммирование, и округление.
+
+```python
+def mean(values: list[float]) -> float:
+    """Среднее арифметическое: точное суммирование math.fsum, округление до 4 знаков."""
+    if not values:
+        raise ValueError("Последовательность не должна быть пустой")
+    return round(math.fsum(values) / len(values), 4)
+```
+
+Merge-коммит `8aaa836`; оба его родителя — обычные коммиты, оба меняли `stats.py`:
+
+```
+6a3bdb3 feat: округлять среднее до четырёх знаков после запятой
+stats.py
+
+17662f7 feat: суммировать значения через math.fsum для точности
+stats.py
+```
+
+Подробный разбор обоих конфликтов —
+в файле [`docs/conflict-log.md`](docs/conflict-log.md).
 
 ---
 
@@ -337,13 +392,18 @@ main.py
 | `main` | продакшн-ветка, только выпущенные релизы, каждый помечен тегом |
 | `develop` | ветка интеграции |
 | `feature/geometry`, `feature/statistics`, `feature/vendor` | завершённые фичи |
-| `feature/report-short`, `feature/report-table` | ветки, породившие конфликт слияния |
+| `feature/report-short`, `feature/report-table` | ветки, породившие конфликт №1 в `main.py` |
+| `feature/stats-precision`, `feature/stats-fsum` | ветки, породившие конфликт №2 в `stats.py` |
 | `feature/cli` | фича, идущая в `develop` через Pull Request |
-| `release/1.0.0`, `release/1.0.1`, `release/1.1.0` | подготовка релизов |
+| `release/1.0.0`, `release/1.0.1`, `release/1.1.0`, `release/1.1.1` | подготовка релизов |
 
 Все слияния сделаны с флагом `--no-ff`. Merge-коммиты репозитория:
 
 ```
+8aaa836 merge: разрешить конфликт в stats.py при слиянии feature/stats-fsum
+3204b76 merge: влить feature/stats-precision в develop
+bf9858b merge: выпустить релиз 1.1.0 в main
+a3f57d7 merge: вернуть изменения релиза 1.1.0 в develop
 7e30812 merge: влить feature/vendor с сабмодулем в develop
 2ef3e94 merge: разрешить конфликт в main.py при слиянии feature/report-table
 9571c2f merge: влить feature/report-short в develop
@@ -358,6 +418,7 @@ a4ae34f merge: выпустить релиз 1.0.1 в main
 Аннотированные теги релизов:
 
 ```
+v1.1.0          Релиз 1.1.0: сабмодуль и разрешение конфликта слияния
 v1.0.1          Релиз 1.0.1: документация лабораторной работы
 v1.0.0          Релиз 1.0.0: приветствие, геометрия, статистика
 ```
@@ -378,26 +439,45 @@ v1.0.0          Релиз 1.0.0: приветствие, геометрия, с
 ## История коммитов
 
 Граф на момент этого коммита. После него в историю добавятся только два merge-коммита
-релиза 1.1.0 — в `main` и обратно в `develop` — и тег `v1.1.0`:
+релиза 1.1.1 — в `main` и обратно в `develop` — и тег `v1.1.1`:
 
 ```
-* 2ad5431 (HEAD -> release/1.1.0) chore: поднять версию до 1.1.0
-*   7e30812 (develop) merge: влить feature/vendor с сабмодулем в develop
+* b68ab3a (HEAD -> release/1.1.1) chore: поднять версию до 1.1.1
+* b096481 (develop) docs: описать второй конфликт слияния в stats.py
+*   3204b76 merge: влить feature/stats-precision в develop
 |\  
-| * 7b09dc7 (feature/vendor) feat: подключить python-dotenv как git submodule в libs/
-|/  
-*   2ef3e94 merge: разрешить конфликт в main.py при слиянии feature/report-table
-|\  
-| * be8e4f0 (feature/report-table) feat: выводить таблицу площадей для радиусов 1-5
-* |   9571c2f merge: влить feature/report-short в develop
-|\ \  
+| *   8aaa836 (feature/stats-precision) merge: разрешить конфликт в stats.py при слиянии feature/stats-fsum
+| |\  
+| | * 17662f7 (feature/stats-fsum) feat: суммировать значения через math.fsum для точности
 | |/  
 |/|   
-| * c73d814 (feature/report-short) feat: выводить площадь одного круга радиуса 10
+| * 6a3bdb3 feat: округлять среднее до четырёх знаков после запятой
 |/  
-*   99ea0cd (origin/develop) merge: вернуть изменения релиза 1.0.1 в develop
+*   a3f57d7 (origin/develop) merge: вернуть изменения релиза 1.1.0 в develop
 |\  
-| | *   a4ae34f (tag: v1.0.1, origin/main, main) merge: выпустить релиз 1.0.1 в main
+| | *   bf9858b (tag: v1.1.0, origin/main, main) merge: выпустить релиз 1.1.0 в main
+| | |\  
+| | |/  
+| |/|   
+| * | 5564c13 (origin/release/1.1.0, release/1.1.0) docs: переписать README под вариант 8 с сабмодулем и конфликтом слияния
+| * | 2ad5431 chore: поднять версию до 1.1.0
+|/ /  
+* |   7e30812 merge: влить feature/vendor с сабмодулем в develop
+|\ \  
+| * | 7b09dc7 (origin/feature/vendor, feature/vendor) feat: подключить python-dotenv как git submodule в libs/
+|/ /  
+* |   2ef3e94 merge: разрешить конфликт в main.py при слиянии feature/report-table
+|\ \  
+| * | be8e4f0 (origin/feature/report-table, feature/report-table) feat: выводить таблицу площадей для радиусов 1-5
+* | |   9571c2f merge: влить feature/report-short в develop
+|\ \ \  
+| |/ /  
+|/| |   
+| * | c73d814 (origin/feature/report-short, feature/report-short) feat: выводить площадь одного круга радиуса 10
+|/ /  
+* |   99ea0cd merge: вернуть изменения релиза 1.0.1 в develop
+|\ \  
+| | *   a4ae34f (tag: v1.0.1) merge: выпустить релиз 1.0.1 в main
 | | |\  
 | | |/  
 | |/|   
@@ -439,18 +519,25 @@ develop
   feature/report-short
   feature/report-table
   feature/statistics
+  feature/stats-fsum
+  feature/stats-precision
   feature/vendor
   main
   release/1.0.0
   release/1.0.1
-* release/1.1.0
+  release/1.1.0
+* release/1.1.1
   remotes/origin/develop
   remotes/origin/feature/cli
   remotes/origin/feature/geometry
+  remotes/origin/feature/report-short
+  remotes/origin/feature/report-table
   remotes/origin/feature/statistics
+  remotes/origin/feature/vendor
   remotes/origin/main
   remotes/origin/release/1.0.0
   remotes/origin/release/1.0.1
+  remotes/origin/release/1.1.0
 ```
 
 ---
