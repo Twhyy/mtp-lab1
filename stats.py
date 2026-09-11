@@ -2,10 +2,10 @@
 
 
 def mean(values: list[float]) -> float:
-    """Среднее арифметическое последовательности чисел."""
+    """Среднее арифметическое, округлённое до четырёх знаков."""
     if not values:
         raise ValueError("Последовательность не должна быть пустой")
-    return sum(values) / len(values)
+    return round(sum(values) / len(values), 4)
 
 
 def median(values: list[float]) -> float:
